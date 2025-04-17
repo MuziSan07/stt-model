@@ -1,0 +1,72 @@
+<!-- templates/admin.html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Token Management Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <h1>🔐 Token Management</h1>
+
+  <form action="/token/create" method="post" class="token-form">
+    <input type="text" name="name" placeholder="Token Name" required />
+    <button type="submit">➕ Create Token</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Token Name</th>
+        <th>Secret Key (Hidden)</th>
+        <th>Status</th>
+        <th>Created On</th>
+        <th>Expires On</th>
+        <th>Last Used</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for token in tokens %}
+      <tr>
+        <td>{{ token["name"] }}</td>
+        <td>••••••••••••••••</td>
+        <td>
+          {% if token["status"] == "active" %}
+            ✅ Active
+          {% elif token["status"] == "revoked" %}
+            ❌ Revoked
+          {% else %}
+            🟡 Expired
+          {% endif %}
+        </td>
+        <td>{{ token["created_on"] }}</td>
+        <td>{{ token["expires_on"] }}</td>
+        <td>{{ token["last_used"] }}</td>
+        <td>
+          {% if token["status"] == "active" %}
+            <form action="/token/{{ token['id'] }}/revoke" method="post" style="display:inline;">
+              <button type="submit">Revoke</button>
+            </form>
+          {% elif token["status"] == "revoked" %}
+            <form action="/token/{{ token['id'] }}/restore" method="post" style="display:inline;">
+              <button type="submit">Restore</button>
+            </form>
+          {% endif %}
+          <form action="/token/{{ token['id'] }}/renew" method="post" style="display:inline;">
+            <button type="submit">Renew</button>
+          </form>
+          <form action="/token/{{ token['id'] }}/delete" method="post" style="display:inline;">
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <footer>
+    <a href="/test">🧪 Test ASR</a>
+  </footer>
+</body>
+</html> -->
+
