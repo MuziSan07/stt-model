@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -179,7 +179,7 @@
                         <button class="button">Renew</button>
                     </form>
                     {% elif token.status == 'revoked' %}
-                    <form action="/token/{{ token.id }}/restore" method="post" style="display:inline;">
+                    <form action="/token/{{ token.id }}/recreate" method="post" style="display:inline;">
                         <button class="button">Restore</button>
                     </form>
                     {% endif %}
@@ -191,6 +191,220 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+</body>
+</html> -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Transcribe Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #111;
+      color: #e5e5e5;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 30px;
+      background-color: #1c1c1e;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+    }
+
+    h1 {
+      text-align: center;
+      color: #ffffff;
+      font-weight: normal;
+    }
+
+    .form-container {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .form-container input[type="text"],
+    .form-container input[type="number"] {
+      padding: 12px;
+      font-size: 16px;
+      width: 250px;
+      border-radius: 5px;
+      border: 1px solid #555;
+      background-color: #2c2c2e;
+      color: #fff;
+    }
+
+    .form-container button {
+      padding: 12px 20px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .form-container button:hover {
+      background-color: #218838;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+      background-color: #2c2c2e;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    table th, table td {
+      padding: 12px 18px;
+      text-align: left;
+      border-bottom: 1px solid #444;
+    }
+
+    table th {
+      background-color: #333;
+      color: #e5e5e5;
+      font-weight: 500;
+      text-transform: uppercase;
+      font-size: 14px;
+    }
+
+    table td {
+      font-size: 14px;
+      color: #e5e5e5;
+    }
+
+    .button {
+      padding: 8px 15px;
+      margin: 3px 2px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background-color: #0056b3;
+    }
+
+    .button.danger {
+      background-color: #dc3545;
+    }
+
+    .button.danger:hover {
+      background-color: #b52a37;
+    }
+
+    .button.success {
+      background-color: #28a745;
+    }
+
+    .button.success:hover {
+      background-color: #218838;
+    }
+
+    .status {
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+    }
+
+    .status-active::before {
+      content: '🟢';
+      margin-right: 6px;
+    }
+
+    .status-revoked::before {
+      content: '❌';
+      margin-right: 6px;
+    }
+
+    .status-expired::before {
+      content: '🟡';
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Transcribe Dashboard</h1>
+
+  <div class="form-container">
+    <form action="/token/create" method="post">
+      <input type="text" name="name" placeholder="Enter token name" required />
+      <input type="number" name="rate_limit" placeholder="Rate Limit (e.g. 200)" min="1" required />
+      <button type="submit">Create Token</button>
+    </form>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Token ID</th>
+        <th>Token</th>
+        <th>Status</th>
+        <th>Created On</th>
+        <th>Expires On</th>
+        <th>Rate Limit</th>
+        <th>Call Count</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for token in tokens %}
+      <tr>
+        <td>{{ token.id }}</td>
+        <td>{{ token.token }}</td>
+        <td class="status 
+          {% if token.status == 'active' %}status-active
+          {% elif token.status == 'revoked' %}status-revoked
+          {% else %}status-expired{% endif %}">
+          {{ token.status.capitalize() }}
+        </td>
+        <td>{{ token.created_on }}</td>
+        <td>{{ token.expires_on }}</td>
+        <td>{{ token.rate_limit or 200 }}</td>
+        <td>{{ token.call_count or 0 }}</td>
+        <td>
+          {% if token.status == 'active' %}
+          <form action="/token/{{ token.id }}/revoke" method="post" style="display:inline;">
+            <button class="button">Revoke</button>
+          </form>
+          <form action="/token/{{ token.id }}/renew" method="post" style="display:inline;">
+            <button class="button success">Renew</button>
+          </form>
+          {% elif token.status == 'revoked' %}
+          <form action="/token/{{ token.id }}/restore" method="post" style="display:inline;">
+            <button class="button success">Restore</button>
+          </form>
+          {% endif %}
+          <form action="/token/{{ token.id }}/delete" method="post" style="display:inline;">
+            <button class="button danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 </body>

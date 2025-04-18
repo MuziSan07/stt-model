@@ -6,6 +6,7 @@ from auth import validate_token
 from asr import transcribe_audio
 import shutil
 import uuid
+import db  # assuming your file is db.py
 
 app = FastAPI()
 
@@ -26,15 +27,22 @@ def dashboard(request: Request):
 
 # Create new token
 @app.post("/token/create")
-def create_token_endpoint(name: str = Form(...)):
-    token = create_token(name)
-    return {"token": token}
+async def create_token(name: str = Form(...), rate_limit: int = Form(...)):
+    db.create_token(name, rate_limit)
+    return RedirectResponse(url="/admin", status_code=303)
+
 
 # Token Actions
 @app.post("/token/{token_id}/revoke")
 def revoke_token_endpoint(token_id: str):
     revoke_token(token_id)
     return {"message": "Token revoked successfully"}
+
+@app.post("/token/{token_id}/restore")
+def restore_token_endpoint(token_id: str):
+    from token_manager import restore_token
+    restore_token(token_id)
+    return {"message": "Token restored successfully"}
 
 @app.post("/token/{token_id}/renew")
 def renew_token_endpoint(token_id: str):
@@ -47,36 +55,63 @@ def delete_token_endpoint(token_id: str):
     return {"message": "Token deleted successfully"}
 
 # Transcribe Audio Route
-@app.post("/transcribe/")
-def transcribe_audio_endpoint(token: str = Form(...), file: UploadFile = File(...)):
-    # Validate token
-    token_data = validate_token(token)
+# @app.post("/transcribe/")
+# def transcribe_audio_endpoint(token: str = Form(...), file: UploadFile = File(...)):
+#     # Validate token
+#     token_data = validate_token(token)
     
-    if not token_data:
-        raise HTTPException(status_code=403, detail="Invalid or inactive token.")
+#     if not token_data:
+#         raise HTTPException(status_code=403, detail="Invalid or inactive token.")
     
-    # Save the uploaded file temporarily
-    filename = f"temp_{uuid.uuid4()}.wav"
-    with open(filename, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+#     # Save the uploaded file temporarily
+#     filename = f"temp_{uuid.uuid4()}.wav"
+#     with open(filename, "wb") as buffer:
+#         shutil.copyfileobj(file.file, buffer)
 
-    # Transcribe the audio
-    transcription = transcribe_audio(filename)
+#     # Transcribe the audio
+#     transcription = transcribe_audio(filename)
 
-    # Return transcription result
-    return {"transcription": transcription}
+#     # Return transcription result
+#     return {"transcription": transcription}
 
 @app.get("/test", response_class=HTMLResponse)
 def test_page(request: Request):
     return templates.TemplateResponse("test.html", {"request": request})
 
+# @app.post("/transcribe/")
+# async def transcribe_audio_endpoint(
+#     request: Request,  # Move this argument before the others
+#     token: str = Form(...),
+#     file: UploadFile = File(...),
+# ):
+#     # Validate the token
+#     token_data = validate_token(token)
+
+#     if not token_data:
+#         return templates.TemplateResponse("test.html", {
+#             "request": request, "error": "Invalid or inactive token."
+#         })
+
+#     # Save the audio file temporarily
+#     filename = f"temp_{uuid.uuid4()}.wav"
+#     with open(filename, "wb") as buffer:
+#         shutil.copyfileobj(file.file, buffer)
+
+#     # Call the ASR model to transcribe the audio
+#     transcription = transcribe_audio(filename)
+
+#     # Return the transcription result
+#     return templates.TemplateResponse("test.html", {
+#         "request": request, "transcription": transcription
+#     })
+from token_manager import increment_call_count, update_token_usage, log_token_usage, is_token_rate_limited
+
 @app.post("/transcribe/")
 async def transcribe_audio_endpoint(
-    request: Request,  # Move this argument before the others
+    request: Request,
     token: str = Form(...),
     file: UploadFile = File(...),
 ):
-    # Validate the token
     token_data = validate_token(token)
 
     if not token_data:
@@ -84,15 +119,22 @@ async def transcribe_audio_endpoint(
             "request": request, "error": "Invalid or inactive token."
         })
 
-    # Save the audio file temporarily
+    if is_token_rate_limited(token):
+        return templates.TemplateResponse("test.html", {
+            "request": request, "error": "Rate limit exceeded. Max 200 requests/hour."
+        })
+
     filename = f"temp_{uuid.uuid4()}.wav"
     with open(filename, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Call the ASR model to transcribe the audio
     transcription = transcribe_audio(filename)
 
-    # Return the transcription result
+    # ✅ Update usage tracking
+    increment_call_count(token)
+    update_token_usage(token_data["id"])
+    log_token_usage(token)
+
     return templates.TemplateResponse("test.html", {
         "request": request, "transcription": transcription
     })

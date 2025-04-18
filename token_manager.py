@@ -62,3 +62,27 @@ def update_token_usage(token_id):
     conn = get_db()
     conn.execute("UPDATE tokens SET last_used = ? WHERE id = ?", (now, token_id))
     conn.commit()
+
+def increment_call_count(token: str):
+    conn = get_db()
+    conn.execute("UPDATE tokens SET call_count = call_count + 1 WHERE token = ?", (token,))
+    conn.commit()
+
+from datetime import datetime, timedelta
+
+def log_token_usage(token: str):
+    now = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    conn = get_db()
+    conn.execute("INSERT INTO token_usage (token, timestamp) VALUES (?, ?)", (token, now))
+    conn.commit()
+
+def is_token_rate_limited(token: str, max_per_hour: int = 200):
+    one_hour_ago = (datetime.utcnow() - timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) FROM token_usage
+        WHERE token = ? AND timestamp > ?
+    """, (token, one_hour_ago))
+    count = cursor.fetchone()[0]
+    return count >= max_per_hour
