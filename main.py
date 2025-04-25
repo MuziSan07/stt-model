@@ -106,35 +106,65 @@ def test_page(request: Request):
 #     })
 from token_manager import increment_call_count, update_token_usage, log_token_usage, is_token_rate_limited
 
+# @app.post("/transcribe/")
+# async def transcribe_audio_endpoint(
+#     request: Request,
+#     token: str = Form(...),
+#     file: UploadFile = File(...),
+# ):
+#     token_data = validate_token(token)
+
+#     if not token_data:
+#         return templates.TemplateResponse("test.html", {
+#             "request": request, "error": "Invalid or inactive token."
+#         })
+
+#     if is_token_rate_limited(token):
+#         return templates.TemplateResponse("test.html", {
+#             "request": request, "error": "Rate limit exceeded. Max 200 requests/hour."
+#         })
+
+#     filename = f"temp_{uuid.uuid4()}.wav"
+#     with open(filename, "wb") as buffer:
+#         shutil.copyfileobj(file.file, buffer)
+
+#     transcription = transcribe_audio(filename)
+
+#     # ✅ Update usage tracking
+#     increment_call_count(token)
+#     update_token_usage(token_data["id"])
+#     log_token_usage(token)
+
+#     return templates.TemplateResponse("test.html", {
+#         "request": request, "transcription": transcription
+#     })
+from fastapi.responses import JSONResponse
 @app.post("/transcribe/")
 async def transcribe_audio_endpoint(
-    request: Request,
     token: str = Form(...),
     file: UploadFile = File(...),
 ):
+    # 🔒 Token validation
     token_data = validate_token(token)
+    if token_data is None:
+        return JSONResponse({"detail": "Invalid or inactive token."}, status_code=401)
 
-    if not token_data:
-        return templates.TemplateResponse("test.html", {
-            "request": request, "error": "Invalid or inactive token."
-        })
-
+    # 🚫 Rate limit check
     if is_token_rate_limited(token):
-        return templates.TemplateResponse("test.html", {
-            "request": request, "error": "Rate limit exceeded. Max 200 requests/hour."
-        })
+        return JSONResponse({"detail": "Rate limit exceeded. Max 200 requests/hour."}, status_code=429)
 
+    # 💾 Save uploaded file temporarily
     filename = f"temp_{uuid.uuid4()}.wav"
     with open(filename, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    # 🧠 Run transcription
     transcription = transcribe_audio(filename)
 
-    # ✅ Update usage tracking
+    # 📊 Update usage tracking
     increment_call_count(token)
     update_token_usage(token_data["id"])
     log_token_usage(token)
 
-    return templates.TemplateResponse("test.html", {
-        "request": request, "transcription": transcription
-    })
+    # ✅ Return JSON response
+    return JSONResponse({"transcription": transcription})
