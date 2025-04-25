@@ -138,67 +138,67 @@ from token_manager import increment_call_count, update_token_usage, log_token_us
 #     return templates.TemplateResponse("test.html", {
 #         "request": request, "transcription": transcription
 #     })
-# from fastapi.responses import JSONResponse
-# @app.post("/transcribe/")
-# async def transcribe_audio_endpoint(
-#     token: str = Form(...),
-#     file: UploadFile = File(...),
-# ):
-#     # 🔒 Token validation
-#     token_data = validate_token(token)
-#     if token_data is None:
-#         return JSONResponse({"detail": "Invalid or inactive token."}, status_code=401)
-
-#     # 🚫 Rate limit check
-#     if is_token_rate_limited(token):
-#         return JSONResponse({"detail": "Rate limit exceeded. Max 200 requests/hour."}, status_code=429)
-
-#     # 💾 Save uploaded file temporarily
-#     filename = f"temp_{uuid.uuid4()}.wav"
-#     with open(filename, "wb") as buffer:
-#         shutil.copyfileobj(file.file, buffer)
-
-#     # 🧠 Run transcription
-#     transcription = transcribe_audio(filename)
-
-#     # 📊 Update usage tracking
-#     increment_call_count(token)
-#     update_token_usage(token_data["id"])
-#     log_token_usage(token)
-
-#     # ✅ Return JSON response
-#     return JSONResponse({"transcription": transcription})
-
-
+from fastapi.responses import JSONResponse
 @app.post("/transcribe/")
 async def transcribe_audio_endpoint(
     token: str = Form(...),
     file: UploadFile = File(...),
 ):
-    # 🔒 Token validation (example, adjust validate_token logic as per your implementation)
+    # 🔒 Token validation
     token_data = validate_token(token)
     if token_data is None:
-        return {"detail": "Invalid or inactive token."}, 401
+        return JSONResponse({"detail": "Invalid or inactive token."}, status_code=401)
 
-    # 🚫 Rate limit check (example, adjust rate limit check logic as per your implementation)
+    # 🚫 Rate limit check
     if is_token_rate_limited(token):
-        return {"detail": "Rate limit exceeded. Max 200 requests/hour."}, 429
+        return JSONResponse({"detail": "Rate limit exceeded. Max 200 requests/hour."}, status_code=429)
 
     # 💾 Save uploaded file temporarily
     filename = f"temp_{uuid.uuid4()}.wav"
     with open(filename, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # 🧠 Run transcription (example, replace with your actual transcription logic)
+    # 🧠 Run transcription
     transcription = transcribe_audio(filename)
 
-    # 📊 Update usage tracking (example, update your token usage logic as needed)
+    # 📊 Update usage tracking
     increment_call_count(token)
     update_token_usage(token_data["id"])
     log_token_usage(token)
 
-    # ✅ Return plain JSON response with the transcription result
-    return {
-        "message": "Transcription completed successfully.",
-        "transcription": transcription
-    }
+    # ✅ Return JSON response
+    return JSONResponse({"transcription": transcription})
+
+
+# @app.post("/transcribe/")
+# async def transcribe_audio_endpoint(
+#     token: str = Form(...),
+#     file: UploadFile = File(...),
+# ):
+#     # 🔒 Token validation (example, adjust validate_token logic as per your implementation)
+#     token_data = validate_token(token)
+#     if token_data is None:
+#         return {"detail": "Invalid or inactive token."}, 401
+
+#     # 🚫 Rate limit check (example, adjust rate limit check logic as per your implementation)
+#     if is_token_rate_limited(token):
+#         return {"detail": "Rate limit exceeded. Max 200 requests/hour."}, 429
+
+#     # 💾 Save uploaded file temporarily
+#     filename = f"temp_{uuid.uuid4()}.wav"
+#     with open(filename, "wb") as buffer:
+#         shutil.copyfileobj(file.file, buffer)
+
+#     # 🧠 Run transcription (example, replace with your actual transcription logic)
+#     transcription = transcribe_audio(filename)
+
+#     # 📊 Update usage tracking (example, update your token usage logic as needed)
+#     increment_call_count(token)
+#     update_token_usage(token_data["id"])
+#     log_token_usage(token)
+
+#     # ✅ Return plain JSON response with the transcription result
+#     return {
+#         "message": "Transcription completed successfully.",
+#         "transcription": transcription
+#     }
